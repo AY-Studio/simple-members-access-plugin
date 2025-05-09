@@ -1,0 +1,77 @@
+/* Forms */
+.members-ui-form {
+    width: 480px;
+    margin: 3rem auto;
+    padding: 2rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    font-family: system-ui, sans-serif;
+}
+
+.members-ui-field {
+    margin-bottom: 1.5rem;
+}
+
+.members-ui-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.members-ui-input {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    color: #111827;
+    background-color: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    transition: border-color 0.2s ease;
+}
+
+.members-ui-input:focus {
+    border-color: #3b82f6;
+    outline: none;
+    background-color: #fff;
+}
+
+.members-ui-actions {
+    text-align: right;
+}
+
+.members-ui-button {
+    background-color: #3b82f6;
+    color: #fff;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.members-ui-button:hover {
+    background-color: #2563eb;
+}
+
+.members-ui-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1.5rem;
+}
+
+.members-ui-link {
+    font-size: 0.95rem;
+    color: #3b82f6;
+    text-decoration: none;
+}
+
+.members-ui-link:hover {
+    color: #2563eb;
+}
+
