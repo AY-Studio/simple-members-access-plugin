@@ -32,6 +32,11 @@ add_action('admin_init', function() {
     register_setting('members_access_settings', 'members_access_logged_in_redirect_page');
     register_setting('members_access_settings', 'members_access_email_include_login_link');
     register_setting('members_access_settings', 'members_access_email_login_page');
+    register_setting('members_access_settings', 'members_access_custom_fields');
+
+    // reCAPTCHA v3 keys
+    register_setting('members_access_settings', 'members_access_recaptcha_site_key_v3');
+    register_setting('members_access_settings', 'members_access_recaptcha_secret_key_v3');
 
     // Section: General
     add_settings_section('members_access_general', 'General', null, 'members-access-settings');
@@ -48,6 +53,22 @@ add_action('admin_init', function() {
         'members_access_login_page',
         'Members Login Page',
         'members_access_login_page_dropdown',
+        'members-access-settings',
+        'members_access_general'
+    );
+
+    add_settings_field(
+        'members_access_recaptcha_site_key_v3',
+        'reCAPTCHA v3 Site Key',
+        'members_access_recaptcha_site_key_field',
+        'members-access-settings',
+        'members_access_general'
+    );
+
+    add_settings_field(
+        'members_access_recaptcha_secret_key_v3',
+        'reCAPTCHA v3 Secret Key',
+        'members_access_recaptcha_secret_key_field',
         'members-access-settings',
         'members_access_general'
     );
@@ -89,9 +110,20 @@ add_action('admin_init', function() {
         'members-access-settings',
         'members_access_email'
     );
+
+    // Section: Extra Registration Fields
+    add_settings_section('members_access_fields', 'Extra Registration Fields', null, 'members-access-settings');
+
+    add_settings_field(
+        'members_access_custom_fields',
+        'Custom Registration Fields (JSON)',
+        'members_access_custom_fields_textarea',
+        'members-access-settings',
+        'members_access_fields'
+    );
 });
 
-// === Dropdown renderers ===
+// === Field Renderers ===
 
 function members_access_register_page_dropdown() {
     $selected = get_option('members_access_register_page');
@@ -144,8 +176,6 @@ function members_access_email_login_page_dropdown() {
     echo '</select>';
 }
 
-// === Checkbox renderers ===
-
 function members_access_redirect_logged_in_checkbox() {
     $enabled = get_option('members_access_redirect_logged_in');
     echo '<label><input type="checkbox" name="members_access_redirect_logged_in" value="1" ' . checked($enabled, 1, false) . '> Enable automatic redirect for logged-in users</label>';
@@ -154,4 +184,22 @@ function members_access_redirect_logged_in_checkbox() {
 function members_access_email_include_login_link_checkbox() {
     $enabled = get_option('members_access_email_include_login_link');
     echo '<label><input type="checkbox" name="members_access_email_include_login_link" value="1" ' . checked($enabled, 1, false) . '> Yes, include a login link in the approval email</label>';
+}
+
+function members_access_custom_fields_textarea() {
+    $value = get_option('members_access_custom_fields', '');
+    echo '<textarea name="members_access_custom_fields" rows="10" cols="60" class="large-text code">' . esc_textarea($value) . '</textarea>';
+    echo '<p class="description">Enter JSON like: <code>[{"label":"Club","name":"club","type":"text","required":true}]</code></p>';
+}
+
+// === reCAPTCHA Fields ===
+
+function members_access_recaptcha_site_key_field() {
+    $value = get_option('members_access_recaptcha_site_key_v3', '');
+    echo '<input type="text" name="members_access_recaptcha_site_key_v3" class="regular-text" value="' . esc_attr($value) . '">';
+}
+
+function members_access_recaptcha_secret_key_field() {
+    $value = get_option('members_access_recaptcha_secret_key_v3', '');
+    echo '<input type="text" name="members_access_recaptcha_secret_key_v3" class="regular-text" value="' . esc_attr($value) . '">';
 }

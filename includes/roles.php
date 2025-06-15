@@ -16,8 +16,28 @@ add_action('user_register', function($user_id) {
 
     $admin_email = get_option('admin_email');
     $subject = 'New Member Registration';
-    $message = "A new member has registered and awaits approval:\n\nUsername: {$user->user_login}\nEmail: {$user->user_email}";
+
+    $message  = "A new member has registered and awaits approval.\n\n";
+    $message .= "Username: {$user->user_login}\n";
+    $message .= "Email: {$user->user_email}\n";
+
+// Get custom fields
+    $custom_fields_json = get_option('members_access_custom_fields');
+    $custom_fields = json_decode($custom_fields_json, true);
+
+    if (is_array($custom_fields)) {
+        foreach ($custom_fields as $field) {
+            $key = $field['name'] ?? '';
+            $label = $field['label'] ?? ucfirst($key);
+            $submitted_value = sanitize_text_field($_POST[$key] ?? '');
+            if (!empty($submitted_value)) {
+                $message .= "{$label}: {$submitted_value}\n";
+            }
+        }
+    }
+
     wp_mail($admin_email, $subject, $message);
+
 });
 
 // When user role changes from pending_member to approved_member, notify them

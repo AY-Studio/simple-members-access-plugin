@@ -20,6 +20,7 @@ include_once plugin_dir_path(__FILE__) . 'includes/settings.php';       // Adds 
 include_once plugin_dir_path(__FILE__) . 'includes/roles.php';          // Adds roles early for registration
 include_once plugin_dir_path(__FILE__) . 'includes/form-handlers.php';  // Sets up login/register shortcodes
 include_once plugin_dir_path(__FILE__) . 'includes/access-control.php'; // Access rules (needs settings + roles)
+include_once plugin_dir_path(__FILE__) . 'includes/admin-actions.php';
 
 // Enqueue styles
 add_action('wp_enqueue_scripts', function() {
@@ -35,11 +36,51 @@ add_action('wp_dashboard_setup', function() {
     wp_add_dashboard_widget('pending_members_widget', 'Pending Members', 'pending_members_dashboard_widget');
 });
 
+add_action('wp_dashboard_setup', function() {
+    wp_add_dashboard_widget('pending_members_widget', 'Pending Members', 'pending_members_dashboard_widget');
+});
+
 function pending_members_dashboard_widget() {
     $users = get_users(['role' => 'pending_member']);
-    echo '<ul>';
-    foreach ($users as $user) {
-        echo '<li>' . esc_html($user->user_login) . ' (' . esc_html($user->user_email) . ')</li>';
+    $custom_fields_json = get_option('members_access_custom_fields');
+    $custom_fields = json_decode($custom_fields_json, true);
+
+    if (empty($users)) {
+        echo '<p>No pending members.</p>';
+        return;
     }
-    echo '</ul>';
+
+    echo '<div style="overflow-x:auto;"><table class="widefat striped">';
+    echo '<thead><tr>';
+    echo '<th>Username</th>';
+    echo '<th>Email</th>';
+
+    if (is_array($custom_fields)) {
+        foreach ($custom_fields as $field) {
+            echo '<th>' . esc_html($field['label']) . '</th>';
+        }
+    }
+
+    echo '</tr></thead><tbody>';
+
+    foreach ($users as $user) {
+        $edit_link = esc_url(admin_url('user-edit.php?user_id=' . $user->ID));
+        echo '<tr>';
+        echo '<td><a href="' . $edit_link . '">' . esc_html($user->user_login) . '</a></td>';
+        echo '<td>' . esc_html($user->user_email) . '</td>';
+
+        if (is_array($custom_fields)) {
+            foreach ($custom_fields as $field) {
+                $value = get_user_meta($user->ID, $field['name'], true);
+                echo '<td>' . esc_html($value) . '</td>';
+            }
+        }
+
+        echo '</tr>';
+    }
+
+    echo '</tbody></table></div>';
+
+    echo '<p style="margin-top:10px;"><a href="' . esc_url(admin_url('users.php?role=pending_member')) . '">View all pending members</a></p>';
 }
+
