@@ -23,12 +23,27 @@ function members_register_form() {
             }
         }
 
-        $username = sanitize_user($_POST['username']);
         $email = sanitize_email($_POST['email']);
+        $username = $email; // Use email as username
         $password = sanitize_text_field($_POST['password']);
+        $first_name = sanitize_text_field($_POST['first_name']);
+        $last_name = sanitize_text_field($_POST['last_name']);
+        $about_you = sanitize_text_field($_POST['about_you']);
+        $about_you_other = sanitize_text_field($_POST['about_you_other'] ?? '');
         $user_id = wp_create_user($username, $password, $email);
 
         if (!is_wp_error($user_id)) {
+            // Update user's first and last name
+            wp_update_user([
+                'ID' => $user_id,
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'display_name' => trim($first_name . ' ' . $last_name)
+            ]);
+
+            // Save About You field - use "other" specification if provided
+            $about_you_value = ($about_you === 'Other' && !empty($about_you_other)) ? $about_you_other : $about_you;
+            update_user_meta($user_id, 'about_you', $about_you_value);
             // Save custom field data as user meta
             $custom_fields_json = get_option('members_access_custom_fields');
             $custom_fields = json_decode($custom_fields_json, true);
@@ -42,45 +57,106 @@ function members_register_form() {
                 }
             }
 
-            echo '<p>Registration successful. Awaiting approval.</p>';
+            echo '<div class="members-ui-success">Registration successful. Awaiting approval.</div>';
         } else {
-            echo '<p>Error: ' . $user_id->get_error_message() . '</p>';
+            echo '<div class="members-ui-error">Error: ' . $user_id->get_error_message() . '</div>';
         }
     }
 
     ob_start(); ?>
     <form method="post" class="members-ui-form">
-        <div class="members-ui-field">
-            <label for="members-username" class="members-ui-label">Username</label>
-            <input type="text" id="members-username" name="username" class="members-ui-input" required>
+        <div class="members-ui-field-row members-ui-field-row-first">
+            <div class="members-ui-field-half">
+                <label for="members-first-name" class="members-ui-label">First Name *</label>
+                <input type="text" id="members-first-name" name="first_name" class="members-ui-input" required>
+            </div>
+            <div class="members-ui-field-half">
+                <label for="members-last-name" class="members-ui-label">Last Name *</label>
+                <input type="text" id="members-last-name" name="last_name" class="members-ui-input" required>
+            </div>
         </div>
 
         <div class="members-ui-field">
-            <label for="members-email" class="members-ui-label">Email</label>
+            <label for="members-email" class="members-ui-label">Email *</label>
             <input type="email" id="members-email" name="email" class="members-ui-input" required>
         </div>
 
         <div class="members-ui-field">
-            <label for="members-password" class="members-ui-label">Password</label>
+            <label for="members-password" class="members-ui-label">Password *</label>
             <input type="password" id="members-password" name="password" class="members-ui-input" required>
         </div>
 
         <?php
-        // Render dynamic custom fields from settings
+        // Render dynamic custom fields from settings - Club field first
         $custom_fields_json = get_option('members_access_custom_fields');
         $custom_fields = json_decode($custom_fields_json, true);
 
         if (is_array($custom_fields)) {
+            // First render Club field if it exists
             foreach ($custom_fields as $field) {
-                $label = esc_html($field['label'] ?? '');
-                $name = esc_attr($field['name'] ?? '');
-                $type = esc_attr($field['type'] ?? 'text');
-                $required = !empty($field['required']) ? 'required' : '';
+                if (strtolower($field['name'] ?? '') === 'club') {
+                    $label = esc_html($field['label'] ?? '');
+                    $name = esc_attr($field['name'] ?? '');
+                    $type = esc_attr($field['type'] ?? 'text');
 
-                echo "<div class=\"members-ui-field\">
-                        <label for=\"members-{$name}\" class=\"members-ui-label\">{$label}</label>
-                        <input type=\"{$type}\" id=\"members-{$name}\" name=\"{$name}\" class=\"members-ui-input\" {$required}>
-                      </div>";
+                    echo "<div class=\"members-ui-field\">
+                            <label for=\"members-{$name}\" class=\"members-ui-label\">{$label} *</label>
+                            <input type=\"{$type}\" id=\"members-{$name}\" name=\"{$name}\" class=\"members-ui-input\" required>
+                          </div>";
+                    break;
+                }
+            }
+        }
+        ?>
+
+        <!-- New About You dropdown field -->
+        <div class="members-ui-field">
+            <label for="members-about-you" class="members-ui-label">About You *</label>
+            <select id="members-about-you" name="about_you" class="members-ui-input" required onchange="toggleOtherField(this)">
+                <option value="">Select one...</option>
+                <option value="Coach">Coach</option>
+                <option value="Member">Member</option>
+                <option value="Parent of member">Parent of member</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+
+        <!-- Other specification field (hidden by default) -->
+        <div class="members-ui-field" id="other-field" style="display: none;">
+            <label for="members-about-you-other" class="members-ui-label">Please specify *</label>
+            <input type="text" id="members-about-you-other" name="about_you_other" class="members-ui-input">
+        </div>
+
+        <script>
+        function toggleOtherField(select) {
+            const otherField = document.getElementById('other-field');
+            const otherInput = document.getElementById('members-about-you-other');
+            
+            if (select.value === 'Other') {
+                otherField.style.display = 'block';
+                otherInput.required = true;
+            } else {
+                otherField.style.display = 'none';
+                otherInput.required = false;
+                otherInput.value = '';
+            }
+        }
+        </script>
+
+        <?php
+        // Then render remaining custom fields (excluding Club which was already rendered)
+        if (is_array($custom_fields)) {
+            foreach ($custom_fields as $field) {
+                if (strtolower($field['name'] ?? '') !== 'club') {
+                    $label = esc_html($field['label'] ?? '');
+                    $name = esc_attr($field['name'] ?? '');
+                    $type = esc_attr($field['type'] ?? 'text');
+
+                    echo "<div class=\"members-ui-field\">
+                            <label for=\"members-{$name}\" class=\"members-ui-label\">{$label} *</label>
+                            <input type=\"{$type}\" id=\"members-{$name}\" name=\"{$name}\" class=\"members-ui-input\" required>
+                          </div>";
+                }
             }
         }
 
@@ -134,20 +210,19 @@ function members_login_form() {
         if (!is_wp_error($user)) {
             $redirect_after_login = true;
         } else {
-            $error = '<p>Login failed: ' . $user->get_error_message() . '</p>';
+            $error = '<div class="members-ui-error">Login failed: ' . $user->get_error_message() . '</div>';
         }
     }
-
-    ob_start();
 
     if (isset($error)) {
         echo $error;
     }
-    ?>
+    
+    ob_start(); ?>
     <form method="post" class="members-ui-form">
         <div class="members-ui-field">
-            <label for="members-username" class="members-ui-label">Username</label>
-            <input type="text" id="members-username" name="username" class="members-ui-input" required>
+            <label for="members-username" class="members-ui-label">Email Address</label>
+            <input type="email" id="members-username" name="username" class="members-ui-input" required>
         </div>
 
         <div class="members-ui-field">
@@ -198,21 +273,62 @@ add_action('show_user_profile', 'members_show_custom_user_fields');
 add_action('edit_user_profile', 'members_show_custom_user_fields');
 
 function members_show_custom_user_fields($user) {
+    echo '<h2>Custom Member Fields</h2><table class="form-table">';
+    
+    // Show About You field first
+    $about_you_value = esc_attr(get_user_meta($user->ID, 'about_you', true));
+    $is_other = !in_array($about_you_value, ['Coach', 'Member', 'Parent of member']) && !empty($about_you_value);
+    $selected_value = $is_other ? 'Other' : $about_you_value;
+    
+    echo "<tr>
+            <th><label for='about_you'>About You</label></th>
+            <td>
+                <select name='about_you' id='about_you' class='regular-text' onchange='toggleOtherFieldProfile(this)'>
+                    <option value=''>Select one...</option>
+                    <option value='Coach'" . selected($selected_value, 'Coach', false) . ">Coach</option>
+                    <option value='Member'" . selected($selected_value, 'Member', false) . ">Member</option>
+                    <option value='Parent of member'" . selected($selected_value, 'Parent of member', false) . ">Parent of member</option>
+                    <option value='Other'" . selected($selected_value, 'Other', false) . ">Other</option>
+                </select>
+            </td>
+          </tr>";
+    
+    // Show other field if needed
+    $other_display = $is_other ? 'table-row' : 'none';
+    $other_value = $is_other ? $about_you_value : '';
+    echo "<tr id='other-field-profile' style='display: {$other_display};'>
+            <th><label for='about_you_other'>Please specify</label></th>
+            <td><input type='text' name='about_you_other' id='about_you_other' value='" . esc_attr($other_value) . "' class='regular-text'></td>
+          </tr>";
+    
+    echo "<script>
+    function toggleOtherFieldProfile(select) {
+        const otherField = document.getElementById('other-field-profile');
+        const otherInput = document.getElementById('about_you_other');
+        
+        if (select.value === 'Other') {
+            otherField.style.display = 'table-row';
+        } else {
+            otherField.style.display = 'none';
+            otherInput.value = '';
+        }
+    }
+    </script>";
+
     $custom_fields_json = get_option('members_access_custom_fields');
     $custom_fields = json_decode($custom_fields_json, true);
 
-    if (!is_array($custom_fields)) return;
+    if (is_array($custom_fields)) {
+        foreach ($custom_fields as $field) {
+            $name = esc_attr($field['name']);
+            $label = esc_html($field['label']);
+            $value = esc_attr(get_user_meta($user->ID, $name, true));
 
-    echo '<h2>Custom Member Fields</h2><table class="form-table">';
-    foreach ($custom_fields as $field) {
-        $name = esc_attr($field['name']);
-        $label = esc_html($field['label']);
-        $value = esc_attr(get_user_meta($user->ID, $name, true));
-
-        echo "<tr>
-                <th><label for='{$name}'>{$label}</label></th>
-                <td><input type='text' name='{$name}' id='{$name}' value='{$value}' class='regular-text'></td>
-              </tr>";
+            echo "<tr>
+                    <th><label for='{$name}'>{$label}</label></th>
+                    <td><input type='text' name='{$name}' id='{$name}' value='{$value}' class='regular-text'></td>
+                  </tr>";
+        }
     }
     echo '</table>';
 }
@@ -223,15 +339,24 @@ add_action('edit_user_profile_update', 'members_save_custom_user_fields');
 function members_save_custom_user_fields($user_id) {
     if (!current_user_can('edit_user', $user_id)) return false;
 
+    // Save About You field - use "other" specification if provided
+    if (isset($_POST['about_you'])) {
+        $about_you = sanitize_text_field($_POST['about_you']);
+        $about_you_other = sanitize_text_field($_POST['about_you_other'] ?? '');
+        
+        $about_you_value = ($about_you === 'Other' && !empty($about_you_other)) ? $about_you_other : $about_you;
+        update_user_meta($user_id, 'about_you', $about_you_value);
+    }
+
     $custom_fields_json = get_option('members_access_custom_fields');
     $custom_fields = json_decode($custom_fields_json, true);
 
-    if (!is_array($custom_fields)) return;
-
-    foreach ($custom_fields as $field) {
-        $meta_key = esc_attr($field['name']);
-        if (isset($_POST[$meta_key])) {
-            update_user_meta($user_id, $meta_key, sanitize_text_field($_POST[$meta_key]));
+    if (is_array($custom_fields)) {
+        foreach ($custom_fields as $field) {
+            $meta_key = esc_attr($field['name']);
+            if (isset($_POST[$meta_key])) {
+                update_user_meta($user_id, $meta_key, sanitize_text_field($_POST[$meta_key]));
+            }
         }
     }
 }

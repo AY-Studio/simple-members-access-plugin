@@ -14,6 +14,20 @@
     margin-bottom: 1.5rem;
 }
 
+.members-ui-field-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.members-ui-field-half {
+    flex: 1;
+}
+
+.members-ui-field-row-first .members-ui-input {
+    margin-bottom: 0;
+}
+
 .members-ui-label {
     display: block;
     margin-bottom: 0.5rem;
@@ -73,5 +87,33 @@
 
 .members-ui-link:hover {
     color: #2563eb;
+}
+
+/* Success Message */
+.members-ui-success {
+    padding: 1rem 1.5rem;
+    margin: 2rem auto 0;
+    width: 480px;
+    background-color: #d1fae5;
+    border: 1px solid #10b981;
+    border-radius: 0.5rem;
+    color: #065f46;
+    text-align: center;
+    font-weight: 500;
+    font-family: system-ui, sans-serif;
+}
+
+/* Error Message */
+.members-ui-error {
+    padding: 1rem 1.5rem;
+    margin: 2rem auto 0;
+    width: 480px;
+    background-color: #fee2e2;
+    border: 1px solid #ef4444;
+    border-radius: 0.5rem;
+    color: #991b1b;
+    text-align: center;
+    font-weight: 500;
+    font-family: system-ui, sans-serif;
 }
 

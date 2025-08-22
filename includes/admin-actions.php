@@ -55,3 +55,31 @@ add_action('admin_notices', function () {
         echo '<div class="notice notice-success is-dismissible"><p>Member approved successfully.</p></div>';
     }
 });
+
+// Add custom column to users table
+add_filter('manage_users_columns', function($columns) {
+    // Insert 'About You' column after 'name'
+    $new_columns = array();
+    foreach ($columns as $key => $value) {
+        $new_columns[$key] = $value;
+        if ($key === 'name') {
+            $new_columns['about_you'] = 'About You';
+        }
+    }
+    return $new_columns;
+});
+
+// Populate the custom column
+add_action('manage_users_custom_column', function($value, $column_name, $user_id) {
+    if ($column_name == 'about_you') {
+        $about_you = get_user_meta($user_id, 'about_you', true);
+        return $about_you ? esc_html($about_you) : '—';
+    }
+    return $value;
+}, 10, 3);
+
+// Make the column sortable
+add_filter('manage_users_sortable_columns', function($columns) {
+    $columns['about_you'] = 'about_you';
+    return $columns;
+});

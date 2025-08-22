@@ -1,4 +1,24 @@
 <?php
+
+function get_admin_email_recipients() {
+    $custom_recipients = get_option('members_access_admin_email_recipients', '');
+    
+    if (empty($custom_recipients)) {
+        return [get_option('admin_email')];
+    }
+    
+    $emails = array_filter(array_map('trim', explode("\n", $custom_recipients)));
+    
+    $valid_emails = [];
+    foreach ($emails as $email) {
+        if (is_email($email)) {
+            $valid_emails[] = $email;
+        }
+    }
+    
+    return empty($valid_emails) ? [get_option('admin_email')] : $valid_emails;
+}
+
 // Always ensure roles exist
 add_action('init', function() {
     if (!get_role('pending_member')) {
@@ -14,7 +34,7 @@ add_action('user_register', function($user_id) {
     $user = new WP_User($user_id);
     $user->set_role('pending_member');
 
-    $admin_email = get_option('admin_email');
+    $admin_emails = get_admin_email_recipients();
     $subject = 'New Member Registration';
 
     $message  = "A new member has registered and awaits approval.\n\n";
@@ -36,7 +56,9 @@ add_action('user_register', function($user_id) {
         }
     }
 
-    wp_mail($admin_email, $subject, $message);
+    foreach ($admin_emails as $admin_email) {
+        wp_mail($admin_email, $subject, $message);
+    }
 
 });
 

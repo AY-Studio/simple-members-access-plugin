@@ -4,13 +4,14 @@ ob_start(); // Start output buffering to prevent header errors
  * Plugin Name: Simple Members Access Plugin
  * Plugin URI: https://ay.studio/
  * Description: Custom membership plugin with admin approval, frontend login/register, and member-only pages.
- * Version: 1.0
+ * Version: 1.2
  * Author: AY Studio
  * Author URI: https://ay.studio
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: members-access
  * Domain Path: /languages
+ * Release Date: 2025-01-28
  */
 
 
@@ -21,6 +22,8 @@ include_once plugin_dir_path(__FILE__) . 'includes/roles.php';          // Adds 
 include_once plugin_dir_path(__FILE__) . 'includes/form-handlers.php';  // Sets up login/register shortcodes
 include_once plugin_dir_path(__FILE__) . 'includes/access-control.php'; // Access rules (needs settings + roles)
 include_once plugin_dir_path(__FILE__) . 'includes/admin-actions.php';
+include_once plugin_dir_path(__FILE__) . 'includes/hooks.php';
+
 
 // Enqueue styles
 add_action('wp_enqueue_scripts', function() {
